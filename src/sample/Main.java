@@ -4,17 +4,25 @@ import javafx.animation.TranslateTransition;
 import javafx.application.Application;
 import javafx.event.EventHandler;
 import javafx.fxml.FXMLLoader;
+import javafx.geometry.Insets;
 import javafx.geometry.Point2D;
+import javafx.geometry.Pos;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Button;
 import javafx.scene.effect.Light;
 import javafx.scene.effect.Lighting;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.Background;
 import javafx.scene.layout.Pane;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.Shape;
+import javafx.scene.text.Font;
+import javafx.scene.text.Text;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
@@ -32,15 +40,38 @@ public class Main extends Application {
     private Disc[][] grid = new Disc[COLUMNS][ROWS];
 
     private Pane discRoot = new Pane();
+    private Pane connect4Pane = new Pane();
+    private Text textWinnerMessage = new Text();
 
     private Parent createContent() {
-        Pane root = new Pane();
-        root.getChildren().add(discRoot);
+        VBox root = new VBox();
+        root.setAlignment(Pos.CENTER);
+        root.setSpacing(10);
 
+        root.setPadding(new Insets(10));
+        Button buttonRepeat = new Button("Repeat");
+        buttonRepeat.setStyle("-fx-font-weight: bold;-fx-font-size: 18");
+        buttonRepeat.setTextFill(Color.valueOf("#b21111"));
+        buttonRepeat.setOnMouseClicked(new EventHandler<MouseEvent>() {
+            @Override
+            public void handle(MouseEvent event) {
+                connect4Pane.setDisable(false);
+                textWinnerMessage.setVisible(false);
+                grid = new Disc[COLUMNS][ROWS];
+                discRoot.getChildren().clear();
+            }
+        });
+
+        textWinnerMessage.setFont(Font.font(18));
+        textWinnerMessage.setStyle("-fx-font-weight: bold");
+        root.getChildren().add(buttonRepeat);
+        root.getChildren().add(textWinnerMessage);
         Shape gridShape = makeGrid();
-        root.getChildren().add(gridShape);
-        root.getChildren().addAll(makeColumns());
 
+        connect4Pane.getChildren().add(discRoot);
+        connect4Pane.getChildren().add(gridShape);
+        connect4Pane.getChildren().addAll(makeColumns());
+        root.getChildren().add(connect4Pane);
         return root;
     }
 
@@ -91,11 +122,11 @@ public class Main extends Application {
                     boolean redMove = true;
 
                     // player move
-                    placeDisc(new Disc(redMove),column);
+                    placeDisc(new Disc(redMove), column);
 
                     //todo calculate the new column for the AI move
                     //AI move
-                    placeDisc(new Disc(!redMove),column);
+                    placeDisc(new Disc(!redMove), column);
                 }
             });
 
@@ -127,8 +158,9 @@ public class Main extends Application {
         TranslateTransition animation = new TranslateTransition(Duration.seconds(0.5), disc);
         animation.setToY(row * (TILE_SIZE + 5) + TILE_SIZE / 4);
         animation.setOnFinished(e -> {
-            if (gameEnded(column, currentRow,redMove)) {
+            if (gameEnded(column, currentRow, redMove)) {
                 gameOver(redMove);
+
             }
 
 //            redMove = !redMove;
@@ -155,11 +187,11 @@ public class Main extends Application {
                 .mapToObj(i -> botLeft.add(i, -i))
                 .collect(Collectors.toList());
 
-        return checkRange(vertical,redMove) || checkRange(horizontal,redMove)
-                || checkRange(diagonal1,redMove) || checkRange(diagonal2,redMove);
+        return checkRange(vertical, redMove) || checkRange(horizontal, redMove)
+                || checkRange(diagonal1, redMove) || checkRange(diagonal2, redMove);
     }
 
-    private boolean checkRange(List<Point2D> points,boolean redMove) {
+    private boolean checkRange(List<Point2D> points, boolean redMove) {
         int chain = 0;
 
         for (Point2D p : points) {
@@ -181,7 +213,15 @@ public class Main extends Application {
     }
 
     private void gameOver(boolean redMove) {
-        System.out.println("Winner: " + (redMove ? "RED" : "YELLOW"));
+        String winningMessage = "The Winner is the " + (redMove ? "Red" : "Yellow") + " player";
+        System.out.println(winningMessage);
+        textWinnerMessage.setText(winningMessage);
+        textWinnerMessage.setVisible(true);
+        if (redMove)
+            textWinnerMessage.setFill(Color.RED);
+        else
+            textWinnerMessage.setFill(Color.valueOf("#ccdd16"));
+        connect4Pane.setDisable(true);
     }
 
     private Optional<Disc> getDisc(int column, int row) {
@@ -194,6 +234,7 @@ public class Main extends Application {
 
     private static class Disc extends Circle {
         private final boolean red;
+
         public Disc(boolean red) {
             super(TILE_SIZE / 2, red ? Color.RED : Color.YELLOW);
             this.red = red;
@@ -213,16 +254,4 @@ public class Main extends Application {
         launch(args);
     }
 
-  /*  @Override
-    public void start(Stage primaryStage) throws Exception{
-        Parent root = FXMLLoader.load(getClass().getResource("sample.fxml"));
-        primaryStage.setTitle("Hello World");
-        primaryStage.setScene(new Scene(root, 300, 275));
-        primaryStage.show();
-    }
-
-
-    public static void main(String[] args) {
-        launch(args);
-    }*/
 }
