@@ -13,10 +13,7 @@ import javafx.scene.control.Button;
 import javafx.scene.effect.Light;
 import javafx.scene.effect.Lighting;
 import javafx.scene.input.MouseEvent;
-import javafx.scene.layout.AnchorPane;
-import javafx.scene.layout.Background;
-import javafx.scene.layout.Pane;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Rectangle;
@@ -38,33 +35,71 @@ public class Main extends Application {
     private static final int ROWS = 6;
 
     private Disc[][] grid = new Disc[COLUMNS][ROWS];
+    private Button buttonPlayerStart = new Button("Player Start");
+    private Button buttonComputerStart = new Button("Computer Start");
+    private Button buttonRepeat = new Button("Repeat");
 
     private Pane discRoot = new Pane();
     private Pane connect4Pane = new Pane();
     private Text textWinnerMessage = new Text();
+    private boolean playerFirst;
 
     private Parent createContent() {
         VBox root = new VBox();
         root.setAlignment(Pos.CENTER);
         root.setSpacing(10);
-
         root.setPadding(new Insets(10));
-        Button buttonRepeat = new Button("Repeat");
-        buttonRepeat.setStyle("-fx-font-weight: bold;-fx-font-size: 18");
-        buttonRepeat.setTextFill(Color.valueOf("#b21111"));
-        buttonRepeat.setOnMouseClicked(new EventHandler<MouseEvent>() {
+
+
+        //Make the player start button
+        buttonPlayerStart.setStyle("-fx-font-weight: bold;-fx-font-size: 18");
+        buttonPlayerStart.setTextFill(Color.RED);
+        buttonPlayerStart.setOnMouseClicked(new EventHandler<MouseEvent>() {
             @Override
             public void handle(MouseEvent event) {
-                connect4Pane.setDisable(false);
-                textWinnerMessage.setVisible(false);
-                grid = new Disc[COLUMNS][ROWS];
-                discRoot.getChildren().clear();
+                playerFirst = true;
+                startNewGame();
+
             }
         });
 
+        //Make the player start button
+        buttonComputerStart.setStyle("-fx-font-weight: bold;-fx-font-size: 18");
+        buttonComputerStart.setTextFill(Color.valueOf("#ccdd16"));
+        buttonComputerStart.setVisible(true);
+        buttonComputerStart.setOnMouseClicked(new EventHandler<MouseEvent>() {
+            @Override
+            public void handle(MouseEvent event) {
+                playerFirst = false;
+                startNewGame();
+            }
+        });
+        //make the repeat button
+        buttonRepeat.setStyle("-fx-font-weight: bold;-fx-font-size: 18");
+        buttonRepeat.setVisible(true);
+        buttonRepeat.setTextFill(Color.FORESTGREEN);
+        buttonRepeat.setVisible(false);
+        buttonRepeat.setOnMouseClicked(new EventHandler<MouseEvent>() {
+            @Override
+            public void handle(MouseEvent event) {
+                buttonPlayerStart.setVisible(true);
+                buttonComputerStart.setVisible(true);
+                buttonRepeat.setVisible(false);
+            }
+        });
+
+
         textWinnerMessage.setFont(Font.font(18));
         textWinnerMessage.setStyle("-fx-font-weight: bold");
-        root.getChildren().add(buttonRepeat);
+
+
+        HBox hBoxButtons = new HBox();
+        hBoxButtons.setAlignment(Pos.CENTER_LEFT);
+        hBoxButtons.setSpacing(60);
+        hBoxButtons.getChildren().addAll(buttonPlayerStart, buttonRepeat, buttonComputerStart);
+        hBoxButtons.setAlignment(Pos.CENTER);
+
+        root.getChildren().add(hBoxButtons);
         root.getChildren().add(textWinnerMessage);
         Shape gridShape = makeGrid();
 
@@ -73,6 +108,17 @@ public class Main extends Application {
         connect4Pane.getChildren().addAll(makeColumns());
         root.getChildren().add(connect4Pane);
         return root;
+    }
+
+    private void startNewGame() {
+        buttonRepeat.setVisible(true);
+        buttonComputerStart.setVisible(false);
+        buttonPlayerStart.setVisible(false);
+        connect4Pane.setDisable(false);
+        textWinnerMessage.setVisible(false);
+        grid = new Disc[COLUMNS][ROWS];
+        discRoot.getChildren().clear();
+
     }
 
     private Shape makeGrid() {
@@ -121,12 +167,23 @@ public class Main extends Application {
                 public void handle(MouseEvent event) {
                     boolean redMove = true;
 
-                    // player move
-                    placeDisc(new Disc(redMove), column);
+                    if (playerFirst) {
+                        // player move
+                        placeDisc(new Disc(redMove), column);
 
-                    //todo calculate the new column for the AI move
-                    //AI move
-                    placeDisc(new Disc(!redMove), column);
+                        //todo calculate the new column for the AI move
+                        //AI move
+                        placeDisc(new Disc(!redMove), column);
+                    } else {
+                        //todo calculate the new column for the AI move
+                        //AI move
+                        placeDisc(new Disc(!redMove), column);
+
+
+                        // player move
+                        placeDisc(new Disc(redMove), column);
+
+                    }
                 }
             });
 
