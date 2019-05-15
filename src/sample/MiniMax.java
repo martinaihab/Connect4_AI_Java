@@ -1,4 +1,4 @@
-package sample;
+//package sample;
 
 import java.util.*;
 
@@ -6,9 +6,9 @@ public class MiniMax {
 	public static final int EMPTY = 0;
 	public static final int COMPUTER = 1;
 	public static final int PLAYER = 2;
-	private static final int COLUMN_COUNT = 7;
-	private static final int ROW_COUNT = 6;
-
+	public static final int COLUMN_COUNT = 7;
+	public static final int ROW_COUNT = 6;
+	public static final int DEPTH = 3;
 
 	public static void initialize_board(int [][] B) {
 		int rows = B.length;
@@ -47,23 +47,21 @@ public class MiniMax {
 
 
 	public static boolean is_terminal(int[][] B) {
-		int rows = B.length;
-		int cols = B[0].length;
-			for(int j=0; j<cols; j++) {
-				if(B[rows-1][j] == EMPTY)
-					return false;
-			}
-		return true;
+		return is_winning_position(B, PLAYER) || is_winning_position(B, COMPUTER) ||  get_all_available_columns(B).size()== 0;
 	}
 
 
-	public static int[][] drop_piece(int[][] B, int C, int piece) {
+	public static int[][] try_drop_piece(int[][] B, int C, int piece) {
 		int rows = B.length;
 		int cols = B[0].length;
 		int [][]temp_B = new int[rows][cols];
+		for(int i=0; i<rows; i++) {
+			for(int j=0; j<cols; j++) {
+				temp_B[i][j] = B[i][j];
+			}
+		}
 		for(int i=0; i<rows; i++)
 		{
-			temp_B[i][C] = B[i][C];
 			if(temp_B[i][C] == EMPTY) {
 				temp_B[i][C] = piece;
 				break;
@@ -71,10 +69,7 @@ public class MiniMax {
 		}
 		return temp_B;
 	}
-
-
-
-
+	
 
 	public static boolean is_winning_position(int [][] board, int piece) {
 		//Tuna
@@ -97,20 +92,13 @@ public class MiniMax {
 					return true;
 //
 //	# Check negatively sloped diagonals
-		for(int i = 0; i<ROW_COUNT-3; i++)
+		for(int i = 3; i<ROW_COUNT; i++)
 			for(int j = 0; j<COLUMN_COUNT-3; j++)
-				if (board[i][j] == piece && board[i+3-1][j+1] == piece && board[i+2][j+2] == piece && board[i+3][j+3] == piece)
+				if (board[i][j] == piece && board[i-1][j+1] == piece && board[i-2][j+2] == piece && board[i-3][j+3] == piece)
 					return true;
 		return false;
 	}
 
-//	public static int[] getColumn(int[][] array, int index){
-//		int[] column = new int[array[0].length]; // Here I assume a rectangular 2D array!
-//		for(int i=0; i<column.length; i++){
-//			column[i] = array[i][index];
-//		}
-//		return column;
-//	}
 
 	public static double score_position(int [][] board) {
 		int score = 0;
@@ -148,10 +136,12 @@ public class MiniMax {
 	    return score;
 	}
 
+	
 	enum LineType{
 		HORIZONTAL, VERTICAL, POSITIVE_DIAGONAL, NEGATIVE_DIAGONAL
 	}
 
+	
 	private static int evaluateWindow(int[][] board,int row, int column, LineType lineType) {
 		int windowScore = 0;
 		int empty = 0;
@@ -213,28 +203,39 @@ public class MiniMax {
 		return windowScore;
 	}
 
-	public static void update_board(int[][] B) {
+
+	
+	public static void update_board(int[][] B, int C, int piece) {
+		int rows = B.length;
+		for(int i=0; i<rows; i++)
+		{
+			if(B[i][C] == EMPTY) {
+				B[i][C] = piece;
+				break;
+			}
+		}
 	}
 	
 	
 	public static int next_move(int[][] B) {
-		double next = minimax(B, 1, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, true).get(1);
+		double next = minimax(B, DEPTH, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, true).get(1);
 		return (int)next;
 	}
 
 
 	public static List<Double> minimax(int [][] B, int depth, double alpha, double beta, boolean maximizing) {
-		List<Double> ret = new ArrayList<>(2);
+		List<Double> ret = new ArrayList<>();
 		if(is_terminal(B)) {
 			if(is_winning_position(B, COMPUTER))
-				ret.set(0, 1000000.0);
+					ret.add(1000000.0);
 			else if(is_winning_position(B, PLAYER))
-				ret.set(0, -1000000.0);
+				ret.add(-1000000.0);		
 			else
-				ret.set(0, 0.0);
+				ret.add(0.0);
 		}
 		else if(depth==0) {
-			ret.set(0, score_position(B));
+			double x = score_position(B);
+			ret.add(x);
 		}
 		else {
 			double value;
@@ -245,7 +246,7 @@ public class MiniMax {
 				//maximizing
 				value = Double.NEGATIVE_INFINITY;
 				for(int c: valid_columns) {
-					int[][] temp_Board = drop_piece(B, c, COMPUTER);
+					int[][] temp_Board = try_drop_piece(B, c, COMPUTER);
 					double new_value = minimax(temp_Board, depth-1, alpha, beta, false).get(0);
 					if(new_value > value) {
 						value=new_value;
@@ -253,7 +254,7 @@ public class MiniMax {
 					}
 					if(value>alpha)
 						alpha = value;
-					if(alpha >= beta)
+					if(alpha >= beta) 
 						break;
 				}
 			}
@@ -261,7 +262,7 @@ public class MiniMax {
 				//minimizing
 				value = Double.POSITIVE_INFINITY;
 				for(int c: valid_columns) {
-					int[][] temp_Board = drop_piece(B, c, COMPUTER);
+					int[][] temp_Board = try_drop_piece(B, c, PLAYER);
 					double new_value = minimax(temp_Board, depth-1, alpha, beta, true).get(0);
 					if(new_value < value) {
 						value=new_value;
@@ -269,14 +270,13 @@ public class MiniMax {
 					}
 					if(value<beta)
 						beta = value;
-					if(alpha >= beta)
+					if(alpha >= beta) 
 						break;
 				}
 			}
-			ret.set(0, value);
-			ret.set(1, (double)next_move);
+			ret.add(value);
+			ret.add((double)next_move);
 		}
-
 		return ret;
 	}
 	
@@ -284,21 +284,28 @@ public class MiniMax {
 	public static void main(String[] args) {
 		int[][] Board = new int[6][7];
 		initialize_board(Board);
-		Board[0][0] = COMPUTER;
-		Board[1][1] = COMPUTER;
-		Board[2][2] = COMPUTER;
-
-//        System.out.println(score_position(Board));
-
-
-//		System.out.println(get_first_available_row(Board, 0));
-//		System.out.println(get_all_available_columns(Board));
-//		System.out.println(Arrays.deepToString(Board).replace("], ", "]\n").replace("[[", "[").replace("]]", "]"));
-//		int[][] Toard = drop_piece(Board, 0, COMPUTER);
-//		System.out.println("Board");
-//		System.out.println(Arrays.deepToString(Board).replace("], ", "]\n").replace("[[", "[").replace("]]", "]"));
-//		System.out.println("Toard");
-//		System.out.println(Arrays.deepToString(Toard).replace("], ", "]\n").replace("[[", "[").replace("]]", "]"));
+		
+		
+		/*
+		while(true) {
+			Scanner input = new Scanner(System.in);
+	        
+			int new_column = input.nextInt();
+	        update_board(Board, new_column, PLAYER);
+	        System.out.println(Arrays.deepToString(Board).replace("], ", "]\n").replace("[[", "[").replace("]]", "]"));
+	        if(is_terminal(Board))
+	        	 break;
+	       
+	        System.out.println();
+	        
+	        new_column = next_move(Board);
+	        update_board(Board, new_column, COMPUTER);
+	        System.out.println(Arrays.deepToString(Board).replace("], ", "]\n").replace("[[", "[").replace("]]", "]"));
+	        if(is_terminal(Board))
+	        	break;
+		}
+		 System.out.println("Game Over !");
+*/
 	}
 
 
