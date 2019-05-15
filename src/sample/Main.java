@@ -3,7 +3,6 @@ package sample;
 import javafx.animation.TranslateTransition;
 import javafx.application.Application;
 import javafx.event.EventHandler;
-import javafx.fxml.FXMLLoader;
 import javafx.geometry.Insets;
 import javafx.geometry.Point2D;
 import javafx.geometry.Pos;
@@ -42,7 +41,6 @@ public class Main extends Application {
     private Pane discRoot = new Pane();
     private Pane connect4Pane = new Pane();
     private Text textWinnerMessage = new Text();
-    private boolean playerFirst;
 
     private Parent createContent() {
         VBox root = new VBox();
@@ -57,8 +55,8 @@ public class Main extends Application {
         buttonPlayerStart.setOnMouseClicked(new EventHandler<MouseEvent>() {
             @Override
             public void handle(MouseEvent event) {
-                playerFirst = true;
                 startNewGame();
+
 
             }
         });
@@ -70,8 +68,8 @@ public class Main extends Application {
         buttonComputerStart.setOnMouseClicked(new EventHandler<MouseEvent>() {
             @Override
             public void handle(MouseEvent event) {
-                playerFirst = false;
                 startNewGame();
+                placeDisc(new Disc(false), AIConnect4.getAIMove(),false);
             }
         });
         //make the repeat button
@@ -85,6 +83,7 @@ public class Main extends Application {
                 buttonPlayerStart.setVisible(true);
                 buttonComputerStart.setVisible(true);
                 buttonRepeat.setVisible(false);
+
             }
         });
 
@@ -106,19 +105,29 @@ public class Main extends Application {
         connect4Pane.getChildren().add(discRoot);
         connect4Pane.getChildren().add(gridShape);
         connect4Pane.getChildren().addAll(makeColumns());
+        freezeConnect4Board();
         root.getChildren().add(connect4Pane);
         return root;
+    }
+
+    private void freezeConnect4Board() {
+        connect4Pane.setDisable(true);
+    }
+
+    private void unfreezeConnect4Board() {
+        connect4Pane.setDisable(false);
+
     }
 
     private void startNewGame() {
         buttonRepeat.setVisible(true);
         buttonComputerStart.setVisible(false);
         buttonPlayerStart.setVisible(false);
-        connect4Pane.setDisable(false);
         textWinnerMessage.setVisible(false);
         grid = new Disc[COLUMNS][ROWS];
         discRoot.getChildren().clear();
-
+        AIConnect4.initialize_board();
+        unfreezeConnect4Board();
     }
 
     private Shape makeGrid() {
@@ -165,25 +174,12 @@ public class Main extends Application {
             rect.setOnMouseClicked(new EventHandler<MouseEvent>() {
                 @Override
                 public void handle(MouseEvent event) {
-                    boolean redMove = true;
-
-                    if (playerFirst) {
-                        // player move
-                        placeDisc(new Disc(redMove), column);
-
-                        //todo calculate the new column for the AI move
-                        //AI move
-                        placeDisc(new Disc(!redMove), column);
-                    } else {
-                        //todo calculate the new column for the AI move
-                        //AI move
-                        placeDisc(new Disc(!redMove), column);
 
 
-                        // player move
-                        placeDisc(new Disc(redMove), column);
+                    // player move
+                    placeDisc(new Disc(true), column,true);
+                    AIConnect4.update_board(column, AIConnect4.PLAYER);
 
-                    }
                 }
             });
 
@@ -193,7 +189,8 @@ public class Main extends Application {
         return list;
     }
 
-    private void placeDisc(Disc disc, int column) {
+    private void placeDisc(Disc disc, int column,boolean playerTurn) {
+        freezeConnect4Board();
         boolean redMove = disc.red;
         int row = ROWS - 1;
         do {
@@ -217,12 +214,19 @@ public class Main extends Application {
         animation.setOnFinished(e -> {
             if (gameEnded(column, currentRow, redMove)) {
                 gameOver(redMove);
+                return;
+            } else if (playerTurn) {
+
+                //if the player played then this is the computer move
+                placeDisc(new Disc(false), AIConnect4.getAIMove(),false);
+                //next turn is player
 
             }
-
-//            redMove = !redMove;
+            unfreezeConnect4Board();
         });
         animation.play();
+
+
     }
 
     private boolean gameEnded(int column, int row, boolean redMove) {
@@ -271,14 +275,14 @@ public class Main extends Application {
 
     private void gameOver(boolean redMove) {
         String winningMessage = "The Winner is the " + (redMove ? "Red" : "Yellow") + " player";
-        System.out.println(winningMessage);
+        //System.out.println(winningMessage);
         textWinnerMessage.setText(winningMessage);
         textWinnerMessage.setVisible(true);
         if (redMove)
             textWinnerMessage.setFill(Color.RED);
         else
             textWinnerMessage.setFill(Color.valueOf("#ccdd16"));
-        connect4Pane.setDisable(true);
+        freezeConnect4Board();
     }
 
     private Optional<Disc> getDisc(int column, int row) {
@@ -299,6 +303,7 @@ public class Main extends Application {
             setCenterX(TILE_SIZE / 2);
             setCenterY(TILE_SIZE / 2);
         }
+
     }
 
     @Override
